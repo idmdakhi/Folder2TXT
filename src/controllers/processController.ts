@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
+import path from "path";
+import fs from "fs/promises";
 import { processFolder } from "../services/folderProcessor";
 import { validatePath } from "../utils/pathValidator";
 import logger from "../utils/logger";
@@ -13,6 +15,7 @@ const processSchema = z.object({
   commonOnly: z.enum(["true", "false"]).default("false"),
   maxDepth: z.string().optional(),
   ignorePatterns: z.string().optional(),
+  useGitignore: z.enum(["true", "false"]).default("false"),
 });
 
 export const processPost = async (
@@ -35,10 +38,28 @@ export const processPost = async (
     const maxDepth = parsed.maxDepth
       ? parseInt(parsed.maxDepth, 10)
       : undefined;
-    const ignorePatterns = parsed.ignorePatterns
-      ? parsed.ignorePatterns.split(",").map((s) => s.trim())
-      : undefined;
+    let ignorePatterns: string[] = parsed.ignorePatterns
+      ? parsed.ignorePatterns
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
 
+    // خواندن .gitignore در صورت درخواست
+    if (parsed.useGitignore === "true") {
+      const gitignorePath = path.join(folderPath, ".gitignore");
+      try {
+        const gitignoreContent = await fs.readFile(gitignorePath, "utf-8");
+        const gitignoreLines = gitignoreContent
+          .split("\n")
+          .map((line: any) => line.trim())
+          .filter((line: any) => line && !line.startsWith("#"));
+        ignorePatterns = [...ignorePatterns, ...gitignoreLines];
+      } catch (err) {
+        // فایل .gitignore وجود ندارد یا قابل خواندن نیست – خطا نده
+        logger.warn("Could not read .gitignore file, skipping.");
+      }
+    }
     // اعتبارسنجی مسیر
     await validatePath(folderPath);
 
