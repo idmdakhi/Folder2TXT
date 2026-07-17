@@ -1,0 +1,52 @@
+repo2txt/
+├── apps/ # برنامه‌های قابل اجرا
+│ ├── cli/ # ورودی خط فرمان
+│ └── server/ # سرور HTTP (Express)
+├── src/ # کد اصلی
+│ ├── app/ # لایه برنامه (Use Cases, Container, Pipeline)
+│ ├── core/domain/ # موجودیت‌های هسته (Node, NodeKind)
+│ ├── features/ # ویژگی‌های مستقل (قابلیت‌های کاربردی)
+│ │ ├── binary/ # تشخیص فایل‌های باینری
+│ │ ├── config/ # پیکربندی و بارگذاری
+│ │ ├── exporter/ # خروجی‌گیری (TXT, MD)
+│ │ ├── filesystem/ # لایه انتزاعی سیستم فایل
+│ │ ├── formatter/ # پاک‌سازی کامنت‌ها و فاصله‌ها
+│ │ ├── glob/ # تطابق الگوی گلوب
+│ │ ├── ignore/ # موتور نادیده‌گیری (شامل .gitignore)
+│ │ ├── logger/ # لاگر (کنسول و Winston)
+│ │ ├── minifier/ # فشرده‌سازی محتوا
+│ │ ├── parallel/ # پردازش موازی با Worker Threads
+│ │ ├── scanner/ # اسکنر اصلی مخزن
+│ │ ├── stats/ # جمع‌آوری آمار (زبان‌ها، حجم، ...)
+│ │ ├── tree/ # ساخت و رندر درخت دایرکتوری
+│ │ ├── watch/ # نظارت بر تغییرات (Watch mode)
+│ │ └── writer/ # نوشتن خروجی در فایل
+│ ├── infrastructure/ # پیاده‌سازی‌های وابسته به محیط (Node FS, Winston)
+│ └── shared/ # ابزارهای مشترک (path, normalize, error, constants)
+├── tests/ # تست‌های واحد (Vitest)
+├── views/ # قالب‌های EJS برای سرور
+├── assets/ # فایل‌های استاتیک (CSS, JS, fonts)
+└── فایل‌های پیکربندی (package.json, tsconfig, docker-compose, ...)
+
+اگر هدف ساخت بهترین repo2txt دنیا باشد، من این ماژول‌ها را نیز اضافه می‌کنم:
+
+AST Engine
+Plugin SDK
+Streaming Export
+Incremental Scan
+Cache Engine
+Hash Database
+File Fingerprint
+Watch Mode
+Git Diff Mode
+AI Context Export
+Dependency Graph
+Call Graph
+Symbol Index
+Search Engine
+REST API
+WebSocket Progress
+TUI (Terminal UI)
+Desktop App (Electron یا Tauri)
+Docker Image رسمی
+SDK برای Node.js

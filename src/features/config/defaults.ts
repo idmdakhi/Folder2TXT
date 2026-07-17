@@ -29,4 +29,11 @@ export const DEFAULT_CONFIG: Readonly<Repo2TxtConfig> = Object.freeze({
   concurrency: DEFAULT_MAX_CONCURRENT_TASKS,
   failFast: true,
   bom: false,
+
+  // ===== فیلدهای جدید نسخه 2.0 =====
+  outputFormat: 'txt',
+  watchMode: false,
+  enableStats: true,
+  enableMinify: false,
+  gitignore: true,
 });

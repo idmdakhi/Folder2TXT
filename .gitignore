@@ -8,3 +8,4 @@ output/
 *.log
 *.lock
 .env
+package-lock.json

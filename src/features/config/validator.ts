@@ -40,4 +40,9 @@ export function validateConfig(config: Repo2TxtConfig): void {
       code: 'CONFIG_DUPLICATE_EXCLUDE',
     });
   }
+  if (!['txt', 'md', 'json'].includes(config.outputFormat)) {
+    throw new Repo2TxtError('outputFormat must be one of: txt, md, json', {
+      code: 'CONFIG_INVALID_OUTPUT_FORMAT',
+    });
+  }
 }

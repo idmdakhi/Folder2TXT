@@ -23,6 +23,13 @@ export class Container {
       root: this.config.root,
       includeHidden: this.config.includeHidden,
       followSymlinks: this.config.followSymlinks,
+      includePatterns: this.config.include,
+      excludePatterns: this.config.exclude,
+      gitignore: this.config.gitignore ?? true,
+      detectBinary: this.config.detectBinary ?? true,
+      enableStats: this.config.includeStatistics ?? true,
+      concurrency: this.config.concurrency ?? 4,
+      maxFileSize: this.config.maxFileSize,
     });
   }
 

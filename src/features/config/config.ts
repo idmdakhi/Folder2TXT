@@ -1,4 +1,4 @@
-export type OutputFormat = 'txt' | 'md';
+export type OutputFormat = 'txt' | 'md' | 'json';
 
 export interface Repo2TxtConfig {
   root: string;
@@ -21,4 +21,20 @@ export interface Repo2TxtConfig {
   concurrency: number;
   failFast: boolean;
   bom: boolean;
+
+  // ===== فیلدهای جدید نسخه 2.0 =====
+  /** فرمت خروجی (txt, md, json) */
+  outputFormat: OutputFormat;
+
+  /** حالت واتچ (نظارت بر تغییرات) */
+  watchMode: boolean;
+
+  /** جمع‌آوری آمار پیشرفته */
+  enableStats: boolean;
+
+  /** فشرده‌سازی خروجی */
+  enableMinify: boolean;
+
+  /** استفاده از قواعد .gitignore */
+  gitignore: boolean;
 }

@@ -39,3 +39,39 @@ npm run test # اجرای تست‌ها (vitest)
 npm run typecheck # بررسی تایپ‌ها
 npm run lint # lint
 npm run format # prettier
+
+# نصب وابستگی‌ها (شامل express, winston و ...)
+
+npm install
+
+# اجرا در حالت توسعه (CLI)
+
+npm run dev
+
+# اجرا در حالت توسعه (سرور)
+
+npm run dev:server
+
+# ساخت پروژه
+
+npm run build
+
+# اجرای CLI بعد از ساخت
+
+npm start
+
+# اجرای سرور بعد از ساخت
+
+npm run start:server
+
+# اجرای تست‌ها
+
+npm run test
+
+# اجرای لینت
+
+npm run lint
+
+# فرمت کد
+
+npm run format
