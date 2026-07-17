@@ -1,815 +1,318 @@
-// public/assets/js/app.js
+// assets/js/app.js
 (function () {
-  // ==================== توابع هسته (مشترک با سرور) ====================
-  const DEFAULT_SKIP_FILES = [
-    // فایل‌های قفل و پیکربندی
-    "package-lock.json",
-    "LICENSE",
-    "yarn.lock",
-    ".prettierrc",
-    ".eslintrc",
-    ".eslintrc.js",
-    ".eslintrc.json",
-    ".babelrc",
-    ".babelrc.js",
-    ".babelrc.json",
-    "tsconfig.json",
-    "webpack.config.js",
-    "jest.config.js",
-    ".env",
-    ".env.local",
-    ".env.development",
-    ".env.production",
-    ".env.test",
-    "composer.lock",
-    // لاگ‌ها
-    "npm-debug.log",
-    "yarn-error.log",
-    // فایل‌های باینری کوچک (می‌توانند در لیست باشند)
-    "*.log",
-    "*.pid",
-    "*.seed",
-    "*.pid.lock",
-  ];
-  const DEFAULT_SKIP_FOLDERS = [
-    // پوشه‌های رایج
-    "node_modules",
-    "vendor",
-    ".git",
-    ".idea",
-    ".vscode",
-    ".vs",
-    "dist",
-    "build",
-    "coverage",
-    "logs",
+  let selectedFiles = [];
+  let fileTypeMap = {};
 
-    // پوشه‌های Symfony
-    "var/cache",
-    "var/log",
-    "var/sessions",
-    "var/tmp",
-    "public/bundles",
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const browseBtn = document.getElementById('browseBtn');
+  const processBtn = document.getElementById('processLocalBtn');
+  const copyBtn = document.getElementById('copyLocalBtn');
+  const statusMsg = document.getElementById('statusMessage');
+  const progressBar = document.getElementById('progressBar');
+  const progressFill = document.getElementById('progressFill');
+  const fileList = document.getElementById('fileList');
+  const fileTypeGrid = document.getElementById('fileTypeGrid');
+  const fileTypesSection = document.getElementById('fileTypesSection');
+  const selectAllBtn = document.getElementById('selectAllBtn');
+  const deselectAllBtn = document.getElementById('deselectAllBtn');
 
-    // پوشه‌های Laravel
-    "storage/app",
-    "storage/framework/cache",
-    "storage/framework/sessions",
-    "storage/framework/testing",
-    "storage/framework/views",
-    "storage/logs",
-    "bootstrap/cache",
-    "public/storage",
+  // گزینه‌ها
+  const separatorInput = document.getElementById('separatorLocal');
+  const outputNameInput = document.getElementById('outputName');
+  const maxDepthInput = document.getElementById('maxDepthLocal');
+  const ignorePatternsInput = document.getElementById('ignorePatternsLocal');
+  const cleanModeCheck = document.getElementById('cleanModeLocal');
+  const commonOnlyCheck = document.getElementById('commonOnlyLocal');
 
-    // پوشه‌های فریم‌ورک‌های جاوااسکریپت
-    ".next",
-    ".nuxt",
-    "out",
-    ".svelte-kit",
-    ".angular",
+  let selectedTypes = new Set();
 
-    // پوشه‌های کش و بیلد
-    ".cache",
-    ".parcel-cache",
-    ".webpack",
-    ".turbo",
-    ".vite",
-    "temp",
-    "tmp",
-    "cache",
-    ".phpunit.cache",
-    ".php-cs-fixer.cache",
+  // رویدادها
+  browseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', handleFiles);
 
-    // پوشه‌های تست
-    ".nyc_output",
-    "cypress/videos",
-    "cypress/screenshots",
-    ".cypress-cache",
-
-    // بیلدهای عمومی
-    "public/build",
-    "public/hot",
-    "public/css",
-    "public/js",
-    "public/mix-manifest.json",
-  ];
-
-  const DEFAULT_SKIP_EXTENSIONS = [
-    // تصاویر
-    "jpg",
-    "jpeg",
-    "png",
-    "gif",
-    "bmp",
-    "tiff",
-    "webp",
-    "svg",
-    "ico",
-    "psd",
-    "ai",
-    "eps",
-    "raw",
-    "xcf",
-    // فایل‌های باینری اجرایی
-    "exe",
-    "dll",
-    "so",
-    "dylib",
-    "bin",
-    "obj",
-    // پایگاه داده
-    "db",
-    "sqlite",
-    "sqlite3",
-    "mdb",
-    // آرشیو
-    "zip",
-    "tar",
-    "gz",
-    "7z",
-    "rar",
-    // اسناد
-    "pdf",
-    "doc",
-    "docx",
-    "xls",
-    "xlsx",
-    // فونت
-    "ttf",
-    "otf",
-    "woff",
-    "woff2",
-    // فایل‌های صوتی/تصویری (اختیاری)
-    "mp3",
-    "mp4",
-    "avi",
-    "mov",
-    "wmv",
-    "flv",
-    "mkv",
-  ];
-
-  function matchesWildcard(pattern, text) {
-    if (!pattern.includes("*")) {
-      return pattern === text;
-    }
-    const regexPattern = pattern
-      .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
-      .replace(/\*/g, ".*");
-    const regex = new RegExp(`^${regexPattern}$`);
-    return regex.test(text);
-  }
-
-  function detectTechnologies(files) {
-    const techs = [];
-    const fileNames = files.map((f) => f.path.toLowerCase());
-    const checks = [
-      [/package\.json$/, "Node.js"],
-      [/tsconfig\.json$/, "TypeScript"],
-      [/webpack\.config\.(js|ts)$/, "Webpack"],
-      [/vite\.config\.(js|ts)$/, "Vite"],
-      [/\.jsx$/, "React"],
-      [/\.vue$/, "Vue"],
-      [/\.go$/, "Go"],
-      [/\.py$/, "Python"],
-      [/\.java$/, "Java"],
-      [/requirements\.txt$/, "Python (pip)"],
-      [/pom\.xml$/, "Maven"],
-      [/gradle\.(build|settings)\./, "Gradle"],
-      [/\.csproj$/, ".NET"],
-      [/Dockerfile$/, "Docker"],
-      [/docker-compose\.ya?ml$/, "Docker Compose"],
-      [/\.tf$/, "Terraform"],
-      [/\.rs$/, "Rust"],
-      [/\.rb$/, "Ruby"],
-      [/Gemfile$/, "Ruby (Bundler)"],
-      [/\.php$/, "PHP"],
-      [/composer\.json$/, "PHP (Composer)"],
-    ];
-    for (const [regex, name] of checks) {
-      if (fileNames.some((f) => regex.test(f))) techs.push(name);
-    }
-    return [...new Set(techs)];
-  }
-
-  function generateOverview(files) {
-    const totalFiles = files.length;
-    const totalSize = files.reduce((sum, f) => sum + (f.size || 0), 0);
-    const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2) + " MB";
-
-    const typeCount = {};
-    files.forEach((f) => {
-      const ext = f.path.split(".").pop()?.toLowerCase() || "";
-      if (ext) typeCount[ext] = (typeCount[ext] || 0) + 1;
-    });
-
-    const technologies = detectTechnologies(files);
-
-    let overview = "=".repeat(50) + "\n";
-    overview += "PROJECT OVERVIEW\n";
-    overview += "=".repeat(50) + "\n";
-    overview += "\nProject Statistics:\n";
-    overview += `Total Files: ${totalFiles}\n`;
-    overview += `Total Size: ${totalSizeMB}\n\n`;
-    overview += "File Types:\n";
-    const sortedTypes = Object.entries(typeCount).sort((a, b) => b[1] - a[1]);
-    for (const [ext, count] of sortedTypes) {
-      overview += `  .${ext}: ${count} file${count !== 1 ? "s" : ""}\n`;
-    }
-    if (technologies.length > 0) {
-      overview += "\nDetected Technologies:\n";
-      for (const tech of technologies) overview += `  - ${tech}\n`;
-    }
-    overview += "\n";
-    return overview;
-  }
-
-  function cleanContent(content, ext) {
-    if (["txt", "md", "json", "csv"].includes(ext)) return content;
-
-    let lines = content.split("\n");
-
-    lines = lines.map((line) => {
-      const trimmed = line.trimEnd();
-
-      if (
-        ["js", "ts", "jsx", "tsx", "java", "c", "cpp", "cs", "go"].includes(ext)
-      ) {
-        const idx = trimmed.indexOf("//");
-        if (idx >= 0 && !isInsideString(trimmed, idx)) {
-          return trimmed.substring(0, idx).trimEnd();
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-indigo-400', 'bg-indigo-50');
+  });
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-indigo-400', 'bg-indigo-50');
+  });
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-indigo-400', 'bg-indigo-50');
+    if (e.dataTransfer.items) {
+      const items = e.dataTransfer.items;
+      if (items[0].webkitGetAsEntry) {
+        const entries = [];
+        for (let i = 0; i < items.length; i++) {
+          const entry = items[i].webkitGetAsEntry();
+          if (entry) entries.push(entry);
         }
-      } else if (["py", "rb", "sh", "bash"].includes(ext)) {
-        const idx = trimmed.indexOf("#");
-        if (idx >= 0 && !isInsideString(trimmed, idx)) {
-          return trimmed.substring(0, idx).trimEnd();
-        }
-      } else if (["html", "xml", "xhtml"].includes(ext)) {
-        return trimmed.replace(/<!--[\s\S]*?-->/g, "");
-      } else if (["css", "scss", "less"].includes(ext)) {
-        let l = trimmed.replace(/\/\*[\s\S]*?\*\//g, "");
-        const idx = l.indexOf("//");
-        if (idx >= 0) l = l.substring(0, idx).trimEnd();
-        return l;
-      } else if (ext === "sql") {
-        let l = trimmed.replace(/\/\*[\s\S]*?\*\//g, "");
-        const idx = l.indexOf("--");
-        if (idx >= 0) l = l.substring(0, idx).trimEnd();
-        return l;
-      }
-      return trimmed;
-    });
-
-    const cleaned = [];
-    let lastWasEmpty = false;
-    for (const line of lines) {
-      if (line.trim() === "") {
-        if (!lastWasEmpty) cleaned.push("");
-        lastWasEmpty = true;
-      } else {
-        cleaned.push(line);
-        lastWasEmpty = false;
+        traverseEntries(entries);
+        return;
       }
     }
-    return cleaned.join("\n").trim();
+    const files = e.dataTransfer.files;
+    if (files.length) {
+      handleFiles({ target: { files } });
+    }
+  });
+
+  function handleFiles(e) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    selectedFiles = Array.from(files);
+    buildFileTypes();
+    updateUI();
+    processBtn.disabled = false;
   }
 
-  function isInsideString(line, index) {
-    let inSingle = false,
-      inDouble = false;
-    for (let i = 0; i < index; i++) {
-      if (line[i] === "'" && !inDouble) inSingle = !inSingle;
-      if (line[i] === '"' && !inSingle) inDouble = !inDouble;
-    }
-    return inSingle || inDouble;
-  }
-
-  function generateTree(files, root) {
-    const treeLines = [];
-    const pathSet = new Set();
-
-    for (const f of files) {
-      const parts = f.path.split("/");
-      let current = "";
-      for (let i = 0; i < parts.length; i++) {
-        const part = parts[i];
-        if (i === parts.length - 1) {
-          pathSet.add(current + part);
-        } else {
-          current += part + "/";
-          pathSet.add(current);
-        }
-      }
-    }
-
-    const sorted = Array.from(pathSet).sort();
-    const prefix = root.split("/").pop() || root;
-    treeLines.push(prefix + "/");
-
-    for (const p of sorted) {
-      const depth = p.split("/").length;
-      const indent = "  ".repeat(depth);
-      const name = p.endsWith("/")
-        ? p.slice(0, -1).split("/").pop() + "/"
-        : p.split("/").pop() || "";
-      treeLines.push(indent + name);
-    }
-
-    return treeLines.join("\n");
-  }
-
-  function formatOutput(files, root, separator = "--- {filename} ---") {
-    const overview = generateOverview(files);
-    const tree = generateTree(files, root);
-    const parts = [];
-
-    parts.push(overview);
-    parts.push("=".repeat(50));
-    parts.push("STRUCTURE");
-    parts.push("=".repeat(50));
-    parts.push(tree);
-    parts.push("\n" + "=".repeat(50));
-    parts.push("FILES");
-    parts.push("=".repeat(50) + "\n");
-
-    const sortedFiles = [...files].sort((a, b) => a.path.localeCompare(b.path));
-
-    for (const file of sortedFiles) {
-      const header = separator.replace("{filename}", file.path);
-      parts.push(header);
-
-      if (file.error) {
-        parts.push(`[ERROR: ${file.error}]`);
-      } else if (file.isBinary) {
-        parts.push(`[BINARY FILE - CONTENT SKIPPED] (${file.size} bytes)`);
-      } else if (file.content !== undefined) {
-        parts.push(file.content);
-      } else {
-        parts.push("[EMPTY OR UNREADABLE]");
-      }
-      parts.push("");
-    }
-
-    return parts.join("\n");
-  }
-
-  // ==================== کلاس اصلی کلاینت ====================
-  class FolderTextMerger {
-    constructor() {
-      this.files = [];
-      this.selectedTypes = new Set();
-      this.mergedContent = "";
-      this.commonFileTypes = new Set([
-        "txt",
-        "js",
-        "py",
-        "json",
-        "md",
-        "html",
-        "htm",
-        "css",
-        "yaml",
-        "yml",
-        "xml",
-        "sql",
-        "gradle",
-        "kt",
-      ]);
-      this.init();
-    }
-
-    init() {
-      this.setupEventListeners();
-    }
-
-    setupEventListeners() {
-      const dropZone = document.getElementById("dropZone");
-      const fileInput = document.getElementById("fileInput");
-      const processBtn = document.getElementById("processLocalBtn");
-      const copyBtn = document.getElementById("copyLocalBtn");
-      const commonOnlyCheckbox = document.getElementById("commonOnlyLocal");
-      const ignorePatternsInput = document.getElementById(
-        "ignorePatternsLocal",
-      );
-      const maxDepthInput = document.getElementById("maxDepthLocal");
-
-      dropZone.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        dropZone.classList.add("drag-over");
-      });
-      dropZone.addEventListener("dragleave", () =>
-        dropZone.classList.remove("drag-over"),
-      );
-      dropZone.addEventListener("drop", (e) => {
-        e.preventDefault();
-        dropZone.classList.remove("drag-over");
-        this.handleFiles(e.dataTransfer.items);
-      });
-
-      fileInput.addEventListener("change", (e) =>
-        this.handleFileInput(e.target.files),
-      );
-
-      processBtn.addEventListener("click", () => this.processFiles());
-      copyBtn.addEventListener("click", () => this.copyToClipboard());
-
-      commonOnlyCheckbox.addEventListener("change", () =>
-        this.renderFoundFileTypes(),
-      );
-      ignorePatternsInput.addEventListener("input", () =>
-        this.renderFoundFileTypes(),
-      );
-      maxDepthInput.addEventListener("input", () =>
-        this.renderFoundFileTypes(),
-      );
-
-      document
-        .getElementById("selectAllBtn")
-        .addEventListener("click", () => this.selectAllTypes());
-      document
-        .getElementById("deselectAllBtn")
-        .addEventListener("click", () => this.deselectAllTypes());
-    }
-
-    handleFiles(items) {
-      this.files = [];
-      const promises = [];
-      for (let item of items) {
-        if (item.kind === "file") {
-          const entry = item.webkitGetAsEntry();
-          if (entry) promises.push(this.traverseFileTree(entry));
-        }
-      }
-      Promise.all(promises).then(() => {
-        this.renderFoundFileTypes();
-        this.updateProcessButton();
-        this.showStatus(
-          `تعداد فایل‌های یافت‌شده: ${this.files.length}`,
-          "success",
-        );
-      });
-    }
-
-    // اصلاح مهم: تبدیل FileList به ساختار داخلی یکسان با traverseFileTree
-    handleFileInput(fileList) {
-      this.files = Array.from(fileList).map((file) => {
-        const relativePath = file.webkitRelativePath || file.name;
-        const skipFile = this.shouldSkipFile(file.name, relativePath);
-        return {
-          path: relativePath,
-          content: null,
-          isBinary: skipFile,
-          size: file.size,
-          error: null,
-          file: file,
-        };
-      });
-      this.renderFoundFileTypes();
-      this.updateProcessButton();
-      this.showStatus(
-        `تعداد فایل‌های یافت‌شده: ${this.files.length}`,
-        "success",
-      );
-    }
-
-    shouldSkipFolder(relativePath) {
-      const normalized = relativePath.endsWith("/")
-        ? relativePath.slice(0, -1)
-        : relativePath;
-      if (DEFAULT_SKIP_FOLDERS.includes(normalized)) return true;
-      for (const folder of DEFAULT_SKIP_FOLDERS) {
-        if (normalized.startsWith(folder + "/") || normalized === folder)
-          return true;
-      }
-      return false;
-    }
-
-    shouldSkipFile(fileName, relativePath) {
-      for (const pattern of DEFAULT_SKIP_FILES) {
-        if (matchesWildcard(pattern, fileName)) return true;
-      }
-      const ext = fileName.split(".").pop()?.toLowerCase() || "";
-      if (DEFAULT_SKIP_EXTENSIONS.includes(ext)) return true;
-      return false;
-    }
-
-    traverseFileTree(item, path = "") {
-      return new Promise((resolve) => {
-        if (item.isFile) {
-          item.file(resolve);
-        } else if (item.isDirectory) {
-          // نادیده گرفتن پوشه‌های ممنوعه بر اساس نام
-          if (DEFAULT_SKIP_FOLDERS.includes(item.name)) {
-            resolve();
-            return;
-          }
-          const dirPath = path + item.name + "/";
-          const dirReader = item.createReader();
-          const readEntries = () => {
-            dirReader.readEntries((entries) => {
-              if (entries.length === 0) {
-                resolve();
-              } else {
-                const promises = entries.map((entry) =>
-                  this.traverseFileTree(entry, dirPath),
-                );
-                Promise.all(promises).then(() => readEntries());
-              }
+  function traverseEntries(entries, path = '') {
+    const allFiles = [];
+    const queue = entries.map((entry) => ({ entry, path }));
+    while (queue.length) {
+      const { entry, path: currentPath } = queue.shift();
+      if (entry.isFile) {
+        entry.file((file) => {
+          file.webkitRelativePath = currentPath
+            ? currentPath + '/' + file.name
+            : file.name;
+          allFiles.push(file);
+        });
+      } else if (entry.isDirectory) {
+        const reader = entry.createReader();
+        reader.readEntries((subEntries) => {
+          for (const sub of subEntries) {
+            queue.push({
+              entry: sub,
+              path: currentPath ? currentPath + '/' + entry.name : entry.name,
             });
-          };
-          readEntries();
-        } else {
-          resolve();
-        }
-      }).then((file) => {
-        if (file) {
-          const relativePath = path + file.name;
-          if (this.shouldSkipFolder(relativePath)) return;
-          const skipFile = this.shouldSkipFile(file.name, relativePath);
-          const entry = {
-            path: relativePath,
-            content: null,
-            isBinary: skipFile,
-            size: file.size,
-            error: null,
-            file: file,
-          };
-          this.files.push(entry);
-        }
-      });
-    }
-
-    getBaseFilteredFiles() {
-      const commonOnly = document.getElementById("commonOnlyLocal").checked;
-      const maxDepthInput = document.getElementById("maxDepthLocal");
-      const maxDepth = maxDepthInput.value
-        ? parseInt(maxDepthInput.value, 10)
-        : undefined;
-      const ignorePatterns = document
-        .getElementById("ignorePatternsLocal")
-        .value.split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-
-      return this.files.filter((file) => {
-        if (commonOnly) {
-          const ext = this.getFileExtension(file.path);
-          if (!this.commonFileTypes.has(ext)) return false;
-        }
-        if (maxDepth !== undefined) {
-          const depth = file.path.split("/").length - 1;
-          if (depth > maxDepth) return false;
-        }
-        for (const pattern of ignorePatterns) {
-          if (matchesWildcard(pattern, file.path)) return false;
-        }
-        return true;
-      });
-    }
-
-    applyFilters(files) {
-      const commonOnly = document.getElementById("commonOnlyLocal").checked;
-      const maxDepthInput = document.getElementById("maxDepthLocal");
-      const maxDepth = maxDepthInput.value
-        ? parseInt(maxDepthInput.value, 10)
-        : undefined;
-      const ignorePatterns = document
-        .getElementById("ignorePatternsLocal")
-        .value.split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-
-      return files.filter((file) => {
-        const ext = this.getFileExtension(file.path);
-        if (!this.selectedTypes.has(ext)) return false;
-        if (commonOnly && !this.commonFileTypes.has(ext)) return false;
-        if (maxDepth !== undefined) {
-          const depth = file.path.split("/").length - 1;
-          if (depth > maxDepth) return false;
-        }
-        for (const pattern of ignorePatterns) {
-          if (matchesWildcard(pattern, file.path)) return false;
-        }
-        return true;
-      });
-    }
-
-    renderFoundFileTypes() {
-      const grid = document.getElementById("fileTypeGrid");
-      grid.innerHTML = "";
-      this.selectedTypes.clear();
-
-      if (this.files.length === 0) {
-        grid.innerHTML =
-          '<p class="text-center text-gray-500 col-span-full">پوشه‌ای انتخاب نشده است.</p>';
-        return;
-      }
-
-      const baseFiltered = this.getBaseFilteredFiles();
-
-      const typeCounts = {};
-      baseFiltered.forEach((file) => {
-        const ext = this.getFileExtension(file.path);
-        if (ext) {
-          typeCounts[ext] = (typeCounts[ext] || 0) + 1;
-        }
-      });
-
-      const foundTypes = Object.keys(typeCounts);
-      if (foundTypes.length === 0) {
-        grid.innerHTML =
-          '<p class="text-center text-gray-500 col-span-full">هیچ فایلی با فیلترهای جاری یافت نشد.</p>';
-        return;
-      }
-
-      foundTypes.sort().forEach((type) => {
-        const item = document.createElement("div");
-        item.className = "file-type-item";
-        item.innerHTML = `
-          <input type="checkbox" id="type-${type}" value="${type}" checked>
-          <label for="type-${type}">.${type}</label>
-          <span class="file-count">${typeCounts[type]}</span>
-        `;
-        const checkbox = item.querySelector("input");
-        checkbox.addEventListener("change", (e) => {
-          if (e.target.checked) this.selectedTypes.add(type);
-          else this.selectedTypes.delete(type);
-          this.updateProcessButton();
-          this.showFileList();
+          }
         });
-        this.selectedTypes.add(type);
-        grid.appendChild(item);
-      });
-
-      this.showFileList();
-    }
-
-    showFileList() {
-      const fileList = document.getElementById("fileList");
-      if (this.files.length === 0) {
-        fileList.style.display = "none";
-        return;
-      }
-      fileList.style.display = "block";
-      fileList.innerHTML =
-        '<h4 class="font-semibold mb-3">فایل‌های قابل پردازش (پس از اعمال فیلترها):</h4>';
-
-      const filtered = this.applyFilters(this.files);
-
-      filtered.slice(0, 50).forEach((file) => {
-        const item = document.createElement("div");
-        item.className = "file-list-item text-sm";
-        item.textContent = file.path;
-        fileList.appendChild(item);
-      });
-
-      if (filtered.length > 50) {
-        const more = document.createElement("div");
-        more.className = "file-list-item text-sm italic";
-        more.textContent = `... و ${filtered.length - 50} فایل دیگر`;
-        fileList.appendChild(more);
       }
     }
-
-    getFileExtension(filename) {
-      const parts = filename.split(".");
-      return parts.length > 1 ? parts.pop().toLowerCase() : "";
-    }
-
-    updateProcessButton() {
-      const processBtn = document.getElementById("processLocalBtn");
-      const filtered = this.applyFilters(this.files);
-      processBtn.disabled = !(
-        filtered.length > 0 && this.selectedTypes.size > 0
-      );
-    }
-
-    showStatus(message, type) {
-      const status = document.getElementById("statusMessage");
-      status.className = `status-message p-3 rounded-lg mb-4 ${type}`;
-      status.textContent = message;
-      status.style.display = "block";
-      if (type !== "processing") {
-        setTimeout(() => {
-          status.style.display = "none";
-        }, 5000);
-      }
-    }
-
-    async processFiles() {
-      const separator = document.getElementById("separatorLocal").value;
-      const outputName =
-        document.getElementById("outputName").value || "merged_files.txt";
-      const cleanMode = document.getElementById("cleanModeLocal").checked;
-      const filteredFiles = this.applyFilters(this.files);
-
-      if (filteredFiles.length === 0) {
-        this.showStatus("هیچ فایلی برای پردازش وجود ندارد.", "error");
-        return;
-      }
-
-      const progressBar = document.getElementById("progressBar");
-      const progressFill = document.getElementById("progressFill");
-      const processBtn = document.getElementById("processLocalBtn");
-      const copyBtn = document.getElementById("copyLocalBtn");
-
-      progressBar.style.display = "block";
-      processBtn.disabled = true;
-      this.showStatus("در حال ادغام فایل‌ها...", "processing");
-
-      for (let i = 0; i < filteredFiles.length; i++) {
-        const file = filteredFiles[i];
-        if (!file.isBinary && !file.content && file.file) {
-          try {
-            const content = await this.readFile(file.file);
-            file.content = content;
-          } catch (error) {
-            file.error = error.message;
-          }
-        }
-        const progress = ((i + 1) / filteredFiles.length) * 100;
-        progressFill.style.width = progress + "%";
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      if (cleanMode) {
-        for (const file of filteredFiles) {
-          if (file.content) {
-            const ext = this.getFileExtension(file.path);
-            file.content = cleanContent(file.content, ext);
-          }
-        }
-      }
-
-      const output = formatOutput(filteredFiles, "folder", separator);
-      this.mergedContent = output;
-
-      copyBtn.style.display = "block";
-      this.downloadFile(output, outputName);
-
-      this.showStatus(
-        `✅ ${filteredFiles.length} فایل با موفقیت ادغام شد.`,
-        "success",
-      );
-      progressBar.style.display = "none";
+    // صبر برای جمع‌آوری همه فایل‌ها
+    setTimeout(() => {
+      selectedFiles = allFiles;
+      buildFileTypes();
+      updateUI();
       processBtn.disabled = false;
-    }
+    }, 500);
+  }
 
-    readFile(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.readAsText(file);
+  function buildFileTypes() {
+    fileTypeMap = {};
+    for (const file of selectedFiles) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!fileTypeMap[ext]) fileTypeMap[ext] = [];
+      fileTypeMap[ext].push(file);
+    }
+    renderFileTypes();
+  }
+
+  function renderFileTypes() {
+    const extensions = Object.keys(fileTypeMap).sort();
+    fileTypeGrid.innerHTML = '';
+    if (extensions.length === 0) {
+      fileTypesSection.classList.add('hidden');
+      return;
+    }
+    fileTypesSection.classList.remove('hidden');
+    for (const ext of extensions) {
+      const count = fileTypeMap[ext].length;
+      const div = document.createElement('label');
+      div.className =
+        'flex items-center gap-2 text-sm bg-white p-2 rounded shadow';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = ext;
+      cb.checked = true;
+      cb.addEventListener('change', () => {
+        if (cb.checked) selectedTypes.add(ext);
+        else selectedTypes.delete(ext);
       });
-    }
-
-    downloadFile(content, filename) {
-      const blob = new Blob([content], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    copyToClipboard() {
-      navigator.clipboard
-        .writeText(this.mergedContent)
-        .then(() => {
-          this.showStatus("📋 محتوا در کلیپ‌بورد کپی شد!", "success");
-        })
-        .catch((err) => {
-          this.showStatus("❌ کپی ناموفق", "error");
-          console.error("Copy failed:", err);
-        });
-    }
-
-    selectAllTypes() {
-      document
-        .querySelectorAll('#fileTypeGrid input[type="checkbox"]')
-        .forEach((cb) => {
-          cb.checked = true;
-          this.selectedTypes.add(cb.value);
-        });
-      this.updateProcessButton();
-      this.showFileList();
-    }
-
-    deselectAllTypes() {
-      document
-        .querySelectorAll('#fileTypeGrid input[type="checkbox"]')
-        .forEach((cb) => {
-          cb.checked = false;
-          this.selectedTypes.delete(cb.value);
-        });
-      this.updateProcessButton();
-      this.showFileList();
+      selectedTypes.add(ext);
+      div.appendChild(cb);
+      div.appendChild(document.createTextNode(`.${ext} (${count})`));
+      fileTypeGrid.appendChild(div);
     }
   }
 
-  new FolderTextMerger();
+  selectAllBtn.addEventListener('click', () => {
+    document
+      .querySelectorAll('#fileTypeGrid input[type="checkbox"]')
+      .forEach((cb) => {
+        cb.checked = true;
+        selectedTypes.add(cb.value);
+      });
+  });
+  deselectAllBtn.addEventListener('click', () => {
+    document
+      .querySelectorAll('#fileTypeGrid input[type="checkbox"]')
+      .forEach((cb) => {
+        cb.checked = false;
+        selectedTypes.delete(cb.value);
+      });
+  });
+
+  function updateUI() {
+    if (selectedFiles.length === 0) {
+      fileList.classList.add('hidden');
+      return;
+    }
+    fileList.classList.remove('hidden');
+    fileList.innerHTML = `<strong>${selectedFiles.length}</strong> فایل انتخاب شد.`;
+  }
+
+  // پردازش محلی
+  processBtn.addEventListener('click', async () => {
+    const separator = separatorInput.value || '--- {filename} ---';
+    const outputName = outputNameInput.value || 'merged_files.txt';
+    const maxDepth = parseInt(maxDepthInput.value) || Infinity;
+    const ignorePatterns = ignorePatternsInput.value
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const cleanMode = cleanModeCheck.checked;
+    const commonOnly = commonOnlyCheck.checked;
+
+    let filesToProcess = selectedFiles;
+    // فیلتر بر اساس پسوندهای انتخاب شده
+    if (selectedTypes.size > 0) {
+      filesToProcess = filesToProcess.filter((f) => {
+        const ext = f.name.split('.').pop().toLowerCase();
+        return selectedTypes.has(ext);
+      });
+    }
+    // فیلتر بر اساس عمق
+    if (maxDepth < Infinity) {
+      filesToProcess = filesToProcess.filter((f) => {
+        const depth = (f.webkitRelativePath || f.name).split('/').length - 1;
+        return depth <= maxDepth;
+      });
+    }
+    // نادیده‌گیری الگوها
+    if (ignorePatterns.length) {
+      filesToProcess = filesToProcess.filter((f) => {
+        const path = f.webkitRelativePath || f.name;
+        return !ignorePatterns.some((pattern) => {
+          const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+          return regex.test(path);
+        });
+      });
+    }
+    // فقط انواع رایج
+    const commonExtensions = [
+      'js',
+      'ts',
+      'json',
+      'html',
+      'css',
+      'md',
+      'txt',
+      'py',
+      'java',
+      'c',
+      'cpp',
+      'go',
+      'rs',
+    ];
+    if (commonOnly) {
+      filesToProcess = filesToProcess.filter((f) => {
+        const ext = f.name.split('.').pop().toLowerCase();
+        return commonExtensions.includes(ext);
+      });
+    }
+
+    if (filesToProcess.length === 0) {
+      showStatus('هیچ فایلی برای پردازش یافت نشد.', 'error');
+      return;
+    }
+
+    processBtn.disabled = true;
+    progressBar.classList.remove('hidden');
+    progressFill.style.width = '0%';
+    showStatus(`در حال پردازش ${filesToProcess.length} فایل...`, 'info');
+
+    let output = '';
+    let count = 0;
+    for (const file of filesToProcess) {
+      try {
+        const content = await readFileContent(file);
+        const header = separator.replace(
+          /\{filename\}/g,
+          file.webkitRelativePath || file.name,
+        );
+        let body = content;
+        if (cleanMode) {
+          body = body.replace(/\/\*[\s\S]*?\*\//g, ''); // حذف کامنت‌های بلوکی
+          body = body.replace(/^\s*\/\/.*$/gm, ''); // حذف کامنت‌های خطی
+          body = body.replace(/^\s*#.*$/gm, ''); // حذف کامنت‌های هش
+          body = body.replace(/[ \t]+$/gm, ''); // حذف فاصله انتهای خط
+          body = body.replace(/\n{3,}/g, '\n\n'); // فشرده‌سازی خطوط خالی
+        }
+        output += header + '\n' + body + '\n\n';
+        count++;
+        progressFill.style.width = `${(count / filesToProcess.length) * 100}%`;
+      } catch (err) {
+        showStatus(`خطا در خواندن ${file.name}: ${err.message}`, 'error');
+      }
+    }
+
+    progressFill.style.width = '100%';
+    showStatus(`پردازش کامل شد. ${count} فایل ادغام شد.`, 'success');
+
+    // دانلود
+    const blob = new Blob([output], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = outputName;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // دکمه کپی
+    copyBtn.classList.remove('hidden');
+    copyBtn.onclick = () => {
+      navigator.clipboard
+        .writeText(output)
+        .then(() => {
+          showStatus('متن کپی شد!', 'success');
+        })
+        .catch(() => {
+          showStatus('کپی ناموفق', 'error');
+        });
+    };
+
+    processBtn.disabled = false;
+  });
+
+  function readFileContent(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    });
+  }
+
+  function showStatus(msg, type = 'info') {
+    statusMsg.classList.remove(
+      'hidden',
+      'bg-blue-50',
+      'bg-red-50',
+      'bg-green-50',
+      'text-blue-700',
+      'text-red-700',
+      'text-green-700',
+    );
+    const colors = {
+      info: 'bg-blue-50 text-blue-700',
+      error: 'bg-red-50 text-red-700',
+      success: 'bg-green-50 text-green-700',
+    };
+    statusMsg.className = `status-message p-3 rounded-lg mb-4 ${colors[type] || colors.info}`;
+    statusMsg.textContent = msg;
+  }
 })();

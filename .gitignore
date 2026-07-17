@@ -1,5 +1,10 @@
-node_modules*
-dist*
-logs*
+node_modules/
+dist/
+logs/
+coverage/
+output/
+.idea/
+.DS_Store
+*.log
+*.lock
 .env
-package-lock.json

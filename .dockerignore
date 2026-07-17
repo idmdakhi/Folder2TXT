@@ -1,8 +1,9 @@
 node_modules
 dist
-*.log
-.env
 .git
-.github
-tests
-README.md
+.gitignore
+.env
+coverage
+*.log
+.vscode
+.idea

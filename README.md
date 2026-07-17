@@ -1,64 +1,41 @@
-# folder2txt
+# repo2txt
 
-![License](https://img.shields.io/github/license/md-akhi/folder2txt)
-![Node Version](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
-![Docker](https://img.shields.io/badge/docker-ready-blue)
+تبدیل ساختار و محتوای مخزن به یک فایل متنی یا مارک‌دان یکپارچه.
 
-تبدیل ساختار پوشه و محتوای فایل‌های متنی به یک فایل متنی یکپارچه – با دو روش پردازش: **روی سرور** (با وارد کردن مسیر) و **در مرورگر** (کشیدن و رها کردن پوشه).
+[![CI](https://github.com/your-username/repo2txt/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/repo2txt/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## ویژگی‌ها
 
-- ✨ پشتیبانی از دو روش پردازش: سمت سرور و سمت کلاینت (آپلود پوشه در مرورگر)
-- 🧹 پاک‌سازی خودکار کامنت‌ها و فاصله‌های اضافی (قابل تنظیم)
-- 📂 نمایش ساختار درختی پوشه و فایل‌ها در خروجی
-- 🔒 امن: محدودیت دسترسی به پوشه‌ها با `BASE_DIR` در حالت سرور
-- 📊 لاگینگ پیشرفته با Winston و چرخش روزانه فایل‌های لاگ
-- 🐳 آماده برای Docker و اجرا با یک دستور
-- 🌐 رابط کاربری واکنش‌گرا با Tailwind CSS و قابلیت شخصی‌سازی
-- ⚡ پردازش هم‌زمان فایل‌ها برای افزایش سرعت
-- 📁 فیلتر کردن فایل‌ها بر اساس پسوند یا اندازه
-- 🔧 پشتیبانی از متغیرهای محیطی برای پیکربندی آسان
-- 📝 تولید خروجی با فرمت‌های مختلف (txt، md)
+- اسکن بازگشتی مخزن
+- ساخت درخت دایرکتوری
+- فیلتر با الگوهای گلوب و نادیده‌گیری (مانند .gitignore)
+- خروجی به دو فرمت `txt` و `md`
+- امکان حذف کامنت‌ها و فاصله‌های اضافی
+- پردازش هم‌زمان با قابلیت تنظیم تعداد تردها
+- پشتیبانی از خط فرمان (CLI)
+- رابط کاربری وب برای پردازش محلی در مرورگر (کشیدن و رها کردن)
+- کاملاً تایپ‌سیفری و مبتنی بر معماری لایه‌ای
 
-## نصب و اجرا
-
-### با Node.js
+## نصب
 
 ```bash
+npm install -g repo2txt
+```
+
+git clone https://github.com/your-username/repo2txt.git
+cd repo2txt
 npm install
-cp .env.example .env
-# ویرایش .env
 npm run build
-npm start
-```
 
-### با Docker
+repo2txt [root] [output] [--md] [--hidden] [--follow] [--remove-comments] [--remove-blank-lines]
 
-```bash
-docker build -t folder2txt .
-docker run -p 3000:3000 -v $(pwd)/data:/app/data folder2txt
-```
+repo2txt . output.txt
+repo2txt ./my-project README.md --md --hidden
 
-## پیکربندی با متغیرهای محیطی
-
-| متغیر                | توضیح                                     | پیش‌فرض                           |
-| -------------------- | ----------------------------------------- | --------------------------------- |
-| `PORT`               | پورت اجرای برنامه                         | 3000                              |
-| `BASE_DIR`           | مسیر پایه برای دسترسی در حالت سرور        | process.cwd()                     |
-| `LOG_LEVEL`          | سطح لاگ (debug, info, warn, error)        | info                              |
-| `MAX_FILE_SIZE`      | حداکثر حجم فایل برای پردازش (بر حسب بایت) | 10485760 (10MB)                   |
-| `ALLOWED_EXTENSIONS` | پسوندهای مجاز (جداشده با کاما)            | .txt,.js,.py,.html,.css,.json,.md |
-
-## استفاده
-
-1. در حالت کلاینت: پوشه خود را در ناحیه مشخص‌شده بکشید و رها کنید.
-2. در حالت سرور: مسیر کامل پوشه را وارد کرده و دکمه پردازش را بزنید.
-3. فایل خروجی به‌صورت خودکار دانلود می‌شود.
-
-## فناوری‌های استفاده‌شده
-
-- **فرانت‌اند**: HTML، Tailwind CSS، JavaScript (ES6)
-- **بک‌اند**: Node.js، Express
-- **پردازش فایل**: `fs`، `path`، `glob`
-- **لاگینگ**: Winston + Daily Rotate File
-- **کانتینر**: Docker
+npm run dev # اجرا با tsx
+npm run build # کامپایل
+npm run test # اجرای تست‌ها (vitest)
+npm run typecheck # بررسی تایپ‌ها
+npm run lint # lint
+npm run format # prettier
