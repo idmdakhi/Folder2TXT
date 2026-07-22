@@ -1,77 +1,46 @@
-# repo2txt
+# repo2text
 
-تبدیل ساختار و محتوای مخزن به یک فایل متنی یا مارک‌دان یکپارچه.
+ابزاری حرفه‌ای برای تبدیل یک ریپازیتوری گیت (یا هر پوشه پروژه) به یک یا چند فایل متنی یکپارچه —
+مناسب برای دادن context به مدل‌های زبانی. کاملاً قابل تنظیم، با معماری client/server جدا و TypeScript در هر دو سمت.
 
-[![CI](https://github.com/your-username/repo2txt/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/repo2txt/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## قابلیت‌ها
 
-## ویژگی‌ها
+- **دو روش ورودی**: کلون مستقیم از آدرس گیت (`https://...`) یا آپلود فایل zip
+- **فیلترهای پیشرفته**: الگوهای include/exclude به سبک glob، رعایت `.gitignore` (حتی nested)، فیلتر بر اساس پسوند
+- **کنترل حجم**: محدودیت حجم هر فایل و حجم کل خروجی
+- **تشخیص باینری**: هم بر اساس پسوند و هم بررسی محتوایی بایت‌ها
+- **۳ فرمت خروجی**: Markdown (با کدبلاک)، متن ساده، XML
+- **شماره خط، حذف کامنت (best-effort)، درج درخت فایل‌ها**
+- **Chunk کردن خودکار خروجی** بر اساس سقف تعداد توکن تقریبی — برای رعایت محدودیت context مدل‌ها
+- **انتخاب دستی فایل‌ها** با UI قبل از تولید خروجی نهایی
+- **دانلود / کپی** خروجی، تک‌بخشی یا چندبخشی
 
-- اسکن بازگشتی مخزن
-- ساخت درخت دایرکتوری
-- فیلتر با الگوهای گلوب و نادیده‌گیری (مانند .gitignore)
-- خروجی به دو فرمت `txt` و `md`
-- امکان حذف کامنت‌ها و فاصله‌های اضافی
-- پردازش هم‌زمان با قابلیت تنظیم تعداد تردها
-- پشتیبانی از خط فرمان (CLI)
-- رابط کاربری وب برای پردازش محلی در مرورگر (کشیدن و رها کردن)
-- کاملاً تایپ‌سیفری و مبتنی بر معماری لایه‌ای
+## ساختار پروژه
 
-## نصب
-
-```bash
-npm install -g repo2txt
+```
+repo2text/
+  server/   # Express + TypeScript API
+  client/   # React + Vite + TypeScript UI
 ```
 
-git clone https://github.com/your-username/repo2txt.git
-cd repo2txt
-npm install
-npm run build
+## اجرا
 
-repo2txt [root] [output] [--md] [--hidden] [--follow] [--remove-comments] [--remove-blank-lines]
-
-repo2txt . output.txt
-repo2txt ./my-project README.md --md --hidden
-
-npm run dev # اجرا با tsx
-npm run build # کامپایل
-npm run test # اجرای تست‌ها (vitest)
-npm run typecheck # بررسی تایپ‌ها
-npm run lint # lint
-npm run format # prettier
-
-# نصب وابستگی‌ها (شامل express, winston و ...)
-
+```bash
+# نصب وابستگی‌ها (ریشه پروژه، با npm workspaces)
 npm install
 
-# اجرا در حالت توسعه (CLI)
-
-npm run dev
-
-# اجرا در حالت توسعه (سرور)
-
+# اجرای سرور (پورت 4000)
 npm run dev:server
 
-# ساخت پروژه
+# اجرای کلاینت (پورت 5173) در ترمینال دیگر
+npm run dev:client
+```
 
-npm run build
+سپس مرورگر را روی `http://localhost:5173` باز کنید.
 
-# اجرای CLI بعد از ساخت
+## نکات فنی
 
-npm start
-
-# اجرای سرور بعد از ساخت
-
-npm run start:server
-
-# اجرای تست‌ها
-
-npm run test
-
-# اجرای لینت
-
-npm run lint
-
-# فرمت کد
-
-npm run format
+- سرور برای هر آپلود/کلون یک session با پوشه موقت می‌سازد و بعد از ۳۰ دقیقه بی‌استفادگی به‌صورت خودکار پاک می‌شود.
+- شمارش توکن یک تخمین سبک (بدون وابستگی به مدل خاص) است؛ اگر می‌خواهید دقیق‌تر شود، `tokenService.ts` را با
+  یک tokenizer واقعی (مثلا `tiktoken`) جایگزین کنید.
+- تمام تنظیمات در `Repo2TextConfig` (در `types.ts` هر دو سمت) تعریف شده‌اند و مستقیماً از UI قابل تغییرند.

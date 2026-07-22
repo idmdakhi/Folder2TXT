@@ -1,0 +1,32 @@
+import { Repo2TextConfig } from "../types.js";
+
+export const defaultConfig: Repo2TextConfig = {
+  includePatterns: [],
+  excludePatterns: [],
+  respectGitignore: true,
+  maxFileSizeKB: 512,
+  maxTotalSizeMB: 20,
+  excludeBinary: true,
+  includeFileTree: true,
+  includeLineNumbers: false,
+  stripComments: false,
+  outputFormat: "markdown",
+  chunkByTokens: null,
+  customHeader: "",
+  customFooter: "",
+  sortBy: "path",
+  includeExtensions: [],
+  excludeExtensions: [],
+  ignoredDirNames: [
+    "node_modules",
+    ".git",
+    "dist",
+    "build",
+    ".next",
+    ".turbo",
+    "coverage",
+    ".venv",
+    "__pycache__",
+    ".cache",
+  ],
+};

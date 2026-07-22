@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/api.ts","./src/main.tsx","./src/types.ts","./src/components/ConfigPanel.tsx","./src/components/FileTree.tsx","./src/components/PreviewPane.tsx","./src/components/SourceInput.tsx","./src/components/StatsBar.tsx"],"version":"5.9.3"}
