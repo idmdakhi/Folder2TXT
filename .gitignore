@@ -1,57 +1,75 @@
 ```
-# Compiled and build artifacts
-*.pyc
-__pycache__/
-*.o
-*.obj
+# Dependencies
+node_modules/
+
+# Build outputs
 dist/
 build/
 target/
 
-# Dependencies
-node_modules/
-venv/
-.venv/
-.env
-.env.local
-.env.*
-
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Python specific
-*.pyc
+# Python artifacts
 __pycache__/
+*.pyc
 *.pyo
 *.pyd
-.Python
+*.py.class
 *.so
 *.egg-info/
 .eggs/
 
-# JavaScript/Node specific
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
 
-# Compressed files
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# Logs
+*.log
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# TypeScript/JavaScript build artifacts
+*.tsbuildinfo
+out/
+lib/
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Cache directories
+.cache/
+.mypy_cache/
+.pytest_cache/
+.nyc_output/
+coverage/
+
+# Compression artifacts
 *.zip
 *.gz
 *.tar
