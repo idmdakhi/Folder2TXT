@@ -16,13 +16,16 @@ import { processFolder } from './services/folderProcessor.js';
 import { config } from './config/index.js';
 import logger from './utils/logger.js';
 import { FileEntry, ProcessOptions } from './shared/core.js';
+import { getTemplate, TemplateType } from './services/templateManager.js';
+import { generateZip } from './services/zipGenerator.js';
+import { uploadToGist, validateGithubToken } from './services/githubService.js';
 
 const program = new Command();
 
 program
   .name('folder2txt')
   .description('تبدیل ساختار پوشه و محتوای فایل‌های متنی به یک فایل متنی یکپارچه')
-  .version('2.0.1');
+  .version('2.1.0');
 
 program
   .command('process <folderPath>')
@@ -39,6 +42,8 @@ program
   .option('--no-overview', 'عدم نمایش نمای کلی پروژه', false)
   .option('-q, --quiet', 'حالت بی‌صدا (بدون لاگ)', false)
   .option('-j, --json', 'خروجی JSON', false)
+  .option('-T, --template <type>', 'قالب خروجی (default|github|llm|concise|detailed|markdown|json)', 'default')
+  .option('-f, --format <format>', 'فرمت خروجی (txt|zip)', 'txt')
   .action(async (folderPath: string, options: any) => {
     try {
       if (options.quiet) {
@@ -96,45 +101,38 @@ program
 
       const result = await processFolder(resolvedPath, processOptions);
 
-      // اعمال فیلترهای اضافی برای tree و overview
-      let finalContent = result.content;
+      // اعمال قالب انتخاب‌شده
+      const templateType = (options.template || 'default') as TemplateType;
+      const templateFn = getTemplate(templateType);
+      let finalContent = templateFn(result.files, resolvedPath, {
+        includeTree: options.tree !== false,
+        includeOverview: options.overview !== false,
+        includeContent: true,
+        maxFileLength: options.maxFileLength ? parseInt(options.maxFileLength, 10) : undefined,
+      });
 
-      if (!options.tree || !options.overview) {
-        // بازسازی خروجی بدون بخش‌های مورد نظر
-        const parts = finalContent.split('\n='.repeat(50));
-        const newParts: string[] = [];
-
-        for (let i = 0; i < parts.length; i++) {
-          const part = parts[i];
-          if (options.overview && part.includes('PROJECT OVERVIEW')) {
-            newParts.push(part);
-          } else if (options.tree && part.includes('STRUCTURE')) {
-            // پیدا کردن بخش STRUCTURE و FILES
-            const structureIndex = part.indexOf('STRUCTURE');
-            const filesIndex = part.indexOf('FILES');
-            if (structureIndex !== -1 && filesIndex !== -1) {
-              const structurePart = part.substring(structureIndex, filesIndex);
-              newParts.push('=' + structurePart);
-            }
-          } else if (part.includes('FILES')) {
-            newParts.push(part);
-          }
-        }
-
-        if (newParts.length > 0) {
-          finalContent = newParts.join('\n=' + '='.repeat(49));
-        }
-      }
-
-      // نوشتن خروجی
+      // نوشتن خروجی بر اساس فرمت انتخاب‌شده
       const outputPath = path.resolve(options.output);
-      await fs.writeFile(outputPath, finalContent, 'utf-8');
-
-      spinner.succeed(chalk.green(`خروجی با موفقیت ذخیره شد: ${outputPath}`));
+      
+      if (options.format === 'zip') {
+        // تولید فایل ZIP
+        const zipPath = outputPath.endsWith('.zip') ? outputPath : outputPath + '.zip';
+        await generateZip(
+          [{ filename: path.basename(zipPath).replace('.zip', '.txt'), content: finalContent }],
+          zipPath
+        );
+        spinner.succeed(chalk.green(`بسته ZIP با موفقیت ذخیره شد: ${zipPath}`));
+      } else {
+        // نوشتن فایل متنی ساده
+        await fs.writeFile(outputPath, finalContent, 'utf-8');
+        spinner.succeed(chalk.green(`خروجی با موفقیت ذخیره شد: ${outputPath}`));
+      }
 
       console.log(chalk.blue('\nآمار:'));
       console.log(`  تعداد فایل‌ها: ${chalk.yellow(result.fileCount.toString())}`);
       console.log(`  حجم کل: ${chalk.yellow((result.totalSize / 1024).toFixed(2) + ' KB')}`);
+      console.log(`  قالب: ${chalk.cyan(templateType)}`);
+      console.log(`  فرمت: ${chalk.cyan(options.format || 'txt')}`);
 
       if (options.json) {
         const jsonOutput = {
@@ -142,6 +140,8 @@ program
           outputPath,
           fileCount: result.fileCount,
           totalSize: result.totalSize,
+          template: templateType,
+          format: options.format || 'txt',
         };
         console.log(JSON.stringify(jsonOutput, null, 2));
       }
@@ -333,6 +333,76 @@ program
       console.log(chalk.green(`\n✓ خروجی با موفقیت ذخیره شد: ${answers.output}`));
       console.log(chalk.blue(`  تعداد فایل‌ها: ${result.fileCount}`));
       console.log(chalk.blue(`  حجم کل: ${(result.totalSize / 1024).toFixed(2)} KB`));
+    } catch (error: any) {
+      console.error(chalk.red(`خطا: ${error.message}`));
+      logger.error(error);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('upload <folderPath>')
+  .description('آپلود پروژه به GitHub Gist')
+  .option('-t, --token <token>', 'توکن GitHub', process.env.GITHUB_TOKEN || '')
+  .option('-d, --description <desc>', 'توضیحات Gist', 'Project export via folder2txt')
+  .option('-p, --public', 'عمومی کردن Gist', false)
+  .option('-T, --template <type>', 'قالب خروجی', 'default')
+  .option('--filename <name>', 'نام فایل در Gist', 'project-export.txt')
+  .action(async (folderPath: string, options: any) => {
+    try {
+      const spinner = ora('در حال پردازش و آماده‌سازی برای آپلود...').start();
+
+      // اعتبارسنجی توکن
+      if (!options.token) {
+        spinner.fail();
+        console.error(chalk.red('خطا: توکن GitHub الزامی است. از گزینه --token استفاده کنید یا متغیر محیطی GITHUB_TOKEN را تنظیم کنید.'));
+        console.log(chalk.yellow('\nراهنما:'));
+        console.log('  ۱. به https://github.com/settings/tokens بروید');
+        console.log('  ۲. یک توکن جدید با دسترسی "gist" ایجاد کنید');
+        console.log('  ۳. از دستور زیر استفاده کنید:');
+        console.log(chalk.cyan('     folder2txt upload ./my-project --token ghp_...'));
+        process.exit(1);
+      }
+
+      // بررسی اعتبار توکن
+      const validation = await validateGithubToken(options.token);
+      if (!validation.valid) {
+        spinner.fail();
+        console.error(chalk.red('توکن GitHub نامعتبر است یا منقضی شده است.'));
+        process.exit(1);
+      }
+
+      spinner.text = `پردازش پوشه با قالب ${options.template}...`;
+      
+      const resolvedPath = path.resolve(folderPath);
+      const { walkDir } = await import('./services/folderWalker.js');
+      const files = await walkDir(resolvedPath, resolvedPath, []);
+      
+      const templateType = (options.template || 'default') as TemplateType;
+      const templateFn = getTemplate(templateType);
+      const content = templateFn(files, resolvedPath, { includeContent: true });
+
+      spinner.text = 'در حال آپلود به GitHub Gist...';
+      
+      const result = await uploadToGist(content, {
+        token: options.token,
+        description: options.description,
+        public: options.public || false,
+        filename: options.filename || 'project-export.txt'
+      });
+
+      if (result.success && result.gistUrl) {
+        spinner.succeed(chalk.green('با موفقیت به GitHub Gist آپلود شد!'));
+        console.log(chalk.blue('\\nاطلاعات Gist:'));
+        console.log(`  لینک: ${chalk.cyan(result.gistUrl)}`);
+        console.log(`  شناسه: ${chalk.yellow(result.gistId || 'N/A')}`);
+        console.log(`  وضعیت: ${options.public ? chalk.green('عمومی') : chalk.yellow('خصوصی')}`);
+        console.log(`  نام فایل: ${chalk.white(options.filename || 'project-export.txt')}`);
+      } else {
+        spinner.fail();
+        console.error(chalk.red(`خطا در آپلود: ${result.error}`));
+        process.exit(1);
+      }
     } catch (error: any) {
       console.error(chalk.red(`خطا: ${error.message}`));
       logger.error(error);

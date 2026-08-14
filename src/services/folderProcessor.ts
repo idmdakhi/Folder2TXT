@@ -67,5 +67,6 @@ export async function processFolder(
     content: output,
     fileCount: filteredFiles.length,
     totalSize,
+    files: filteredFiles,
   };
 }

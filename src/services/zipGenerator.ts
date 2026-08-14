@@ -2,7 +2,9 @@
 import path from 'path';
 import fs from 'fs';
 import { FileEntry } from '../shared/core';
-import archiver from 'archiver';
+import * as archiverModule from 'archiver';
+
+const archiver = archiverModule.default || (archiverModule as any);
 
 export interface ZipOptions {
   filename?: string;
@@ -16,41 +18,35 @@ export interface ZipResult {
   fileCount: number;
 }
 
+export interface ZipFileEntry {
+  filename: string;
+  content: string;
+}
+
 export async function generateZip(
-  files: FileEntry[],
-  outputDir: string,
+  files: ZipFileEntry[],
+  outputPath: string,
   options: ZipOptions = {}
-): Promise<ZipResult> {
-  const filename = options.filename || `project-export-${Date.now()}.zip`;
-  const zipPath = path.join(outputDir, filename);
+): Promise<string> {
+  const outputDir = path.dirname(outputPath);
   
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
   
   return new Promise((resolve, reject) => {
-    const output = fs.createWriteStream(zipPath);
+    const output = fs.createWriteStream(outputPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
-    let fileCount = 0;
     
     output.on('close', () => {
-      resolve({ zipPath, fileSize: archive.pointer(), fileCount });
+      resolve(outputPath);
     });
     
     archive.on('error', (err: Error) => reject(err));
     archive.pipe(output);
     
-    if (options.includeStructure !== false) {
-      const structureFilename = options.structureFilename || 'STRUCTURE.txt';
-      const structure = generateStructureFile(files);
-      archive.append(structure, { name: structureFilename });
-      fileCount++;
-    }
-    
     for (const file of files) {
-      if (file.error || file.isBinary) continue;
-      archive.append(file.content || '', { name: file.path });
-      fileCount++;
+      archive.append(file.content, { name: file.filename });
     }
     
     archive.finalize();

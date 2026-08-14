@@ -2,26 +2,18 @@
 # Dependencies
 node_modules/
 
-# Build outputs
+# Build artifacts
 dist/
 build/
 target/
 
-# Python artifacts
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.py.class
-*.so
-*.egg-info/
-.eggs/
+# Logs
+*.log
 
-# Virtual environments
-venv/
-.venv/
-env/
-.env/
+# Environment variables
+.env
+.env.local
+*.env.*
 
 # IDE files
 .vscode/
@@ -30,46 +22,18 @@ env/
 *.swo
 *.tmp
 
-# Logs
-*.log
+# Python cache (if present)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
 # Coverage reports
 coverage/
 htmlcov/
 .coverage
 
-# Environment variables
-.env
-.env.local
-*.env.*
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# TypeScript/JavaScript build artifacts
-*.tsbuildinfo
-out/
-lib/
-
-# Package manager files
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-
-# Cache directories
-.cache/
-.mypy_cache/
-.pytest_cache/
-.nyc_output/
-coverage/
-
-# Compression artifacts
+# Compression files
 *.zip
 *.gz
 *.tar
