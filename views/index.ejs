@@ -137,18 +137,38 @@
     <i class="fas fa-laptop text-green-600"></i> پردازش محلی (در مرورگر)
   </h2>
 
+  <!-- کارت‌های آمار -->
+  <div id="statsSection" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 hidden">
+    <div class="stat-card animate-fade-in">
+      <div class="stat-value" id="statTotalFiles">0</div>
+      <div class="stat-label">کل فایل‌ها</div>
+    </div>
+    <div class="stat-card animate-fade-in" style="animation-delay: 0.1s">
+      <div class="stat-value" id="statSelectedFiles">0</div>
+      <div class="stat-label">فایل‌های انتخابی</div>
+    </div>
+    <div class="stat-card animate-fade-in" style="animation-delay: 0.2s">
+      <div class="stat-value" id="statTotalSize">0 KB</div>
+      <div class="stat-label">حجم کل</div>
+    </div>
+    <div class="stat-card animate-fade-in" style="animation-delay: 0.3s">
+      <div class="stat-value" id="statFileTypes">0</div>
+      <div class="stat-label">انواع فایل</div>
+    </div>
+  </div>
+
   <!-- Drop zone -->
   <div
     id="dropZone"
-    class="drop-zone border-4 border-dashed border-gray-300 rounded-2xl p-8 text-center bg-gray-50 cursor-pointer transition hover:border-indigo-400 hover:bg-indigo-50 mb-6"
+    class="drop-zone border-4 border-dashed border-gray-300 rounded-2xl p-8 text-center bg-gray-50 cursor-pointer transition hover:border-indigo-400 hover:bg-indigo-50 mb-6 hover-lift"
   >
-    <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-3"></i>
+    <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-3 animate-pulse-slow"></i>
     <p class="text-gray-700 text-lg">پوشه را اینجا بکشید و رها کنید</p>
     <small class="text-gray-500">یا</small>
     <button
       type="button"
       id="browseBtn"
-      class="block mx-auto mt-3 px-6 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition"
+      class="block mx-auto mt-3 px-6 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition hover-lift"
     >
       انتخاب پوشه
     </button>
@@ -164,21 +184,32 @@
 
   <!-- لیست انواع فایل‌ها (پویا) -->
   <div id="fileTypesSection" class="file-types mb-6 hidden">
-    <h3 class="font-bold text-gray-700 mb-3">انواع فایل‌های یافت شده</h3>
+    <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+      <i class="fas fa-file-code text-indigo-500"></i>
+      انواع فایل‌های یافت شده
+    </h3>
     <div class="flex gap-2 mb-3">
       <button
         type="button"
         id="selectAllBtn"
-        class="px-4 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300 transition"
+        class="px-4 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300 transition hover-lift"
       >
-        انتخاب همه
+        <i class="fas fa-check-circle ml-1"></i> انتخاب همه
       </button>
       <button
         type="button"
         id="deselectAllBtn"
-        class="px-4 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300 transition"
+        class="px-4 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300 transition hover-lift"
       >
-        عدم انتخاب همه
+        <i class="fas fa-times-circle ml-1"></i> عدم انتخاب همه
+      </button>
+      <button
+        type="button"
+        id="invertSelectionBtn"
+        class="px-4 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300 transition hover-lift"
+        title="معکوس کردن انتخاب"
+      >
+        <i class="fas fa-exchange-alt"></i>
       </button>
     </div>
     <div
@@ -189,7 +220,9 @@
 
   <!-- گزینه‌ها (دقیقاً مشابه سرور) -->
   <div class="bg-gray-50 p-5 rounded-2xl mb-5">
-    <h3 class="font-bold text-gray-700 mb-4">گزینه‌ها</h3>
+    <h3 class="font-bold text-gray-700 mb-4 flex items-center gap-2">
+      <i class="fas fa-cog text-gray-600"></i> گزینه‌ها
+    </h3>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <label class="block text-sm font-semibold text-gray-600 mb-1"
@@ -198,7 +231,7 @@
         <input
           type="text"
           id="separatorLocal"
-          class="w-full px-4 py-2 border border-gray-300 rounded-full focus:border-indigo-400"
+          class="w-full px-4 py-2 border border-gray-300 rounded-full focus:border-indigo-400 transition"
           value="--- {filename} ---"
         />
       </div>
@@ -209,7 +242,7 @@
         <input
           type="text"
           id="outputName"
-          class="w-full px-4 py-2 border border-gray-300 rounded-full focus:border-indigo-400"
+          class="w-full px-4 py-2 border border-gray-300 rounded-full focus:border-indigo-400 transition"
           value="merged_files.txt"
         />
       </div>
@@ -220,8 +253,10 @@
         <input
           type="number"
           id="maxDepthLocal"
-          class="w-full px-4 py-2 border border-gray-300 rounded-full focus:border-indigo-400"
+          class="w-full px-4 py-2 border border-gray-300 rounded-full focus:border-indigo-400 transition"
           placeholder="مثلاً ۳"
+          min="1"
+          max="20"
         />
       </div>
       <div>
@@ -231,28 +266,46 @@
         <input
           type="text"
           id="ignorePatternsLocal"
-          class="w-full px-4 py-2 border border-gray-300 rounded-full focus:border-indigo-400"
+          class="w-full px-4 py-2 border border-gray-300 rounded-full focus:border-indigo-400 transition"
           placeholder="node_modules, .git, *.log"
         />
       </div>
     </div>
     <div class="flex flex-wrap gap-4 mt-4">
-      <label class="flex items-center gap-2">
+      <label class="flex items-center gap-2 tooltip" data-tooltip="حذف کامنت‌ها و خطوط خالی اضافی">
         <input
           type="checkbox"
           id="cleanModeLocal"
           checked
-          class="w-4 h-4 text-indigo-600"
+          class="w-4 h-4 text-indigo-600 rounded transition"
         />
         <span>پاک‌سازی و فشرده‌سازی</span>
       </label>
-      <label class="flex items-center gap-2">
+      <label class="flex items-center gap-2 tooltip" data-tooltip="فقط فایل‌های متنی رایج">
         <input
           type="checkbox"
           id="commonOnlyLocal"
-          class="w-4 h-4 text-indigo-600"
+          class="w-4 h-4 text-indigo-600 rounded transition"
         />
         <span>فقط انواع فایل رایج</span>
+      </label>
+      <label class="flex items-center gap-2 tooltip" data-tooltip="شامل نمای کلی، ساختار درختی و محتوا">
+        <input
+          type="checkbox"
+          id="includeOverviewLocal"
+          checked
+          class="w-4 h-4 text-indigo-600 rounded transition"
+        />
+        <span>شامل نمای کلی پروژه</span>
+      </label>
+      <label class="flex items-center gap-2 tooltip" data-tooltip="مرتب‌سازی فایل‌ها بر اساس مسیر">
+        <input
+          type="checkbox"
+          id="sortByPathLocal"
+          checked
+          class="w-4 h-4 text-indigo-600 rounded transition"
+        />
+        <span>مرتب‌سازی بر اساس مسیر</span>
       </label>
     </div>
   </div>
@@ -260,11 +313,14 @@
   <!-- وضعیت و پیشرفت -->
   <div
     id="statusMessage"
-    class="status-message hidden p-3 rounded-lg mb-4"
-  ></div>
+    class="status-message hidden p-3 rounded-lg mb-4 flex items-center gap-2"
+  >
+    <i id="statusIcon" class="fas fa-info-circle"></i>
+    <span id="statusText"></span>
+  </div>
   <div
     id="progressBar"
-    class="progress-bar w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-4 hidden"
+    class="progress-bar w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-4 hidden"
   >
     <div
       id="progressFill"
@@ -273,18 +329,26 @@
   </div>
 
   <!-- دکمه‌ها -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <button
+      id="processLocalBtn"
+      class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-full font-bold text-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition hover-lift"
+      disabled
+    >
+      <i class="fas fa-play ml-2"></i> ادغام فایل‌ها
+    </button>
+    <button
+      id="copyLocalBtn"
+      class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-full font-bold text-lg hover:shadow-lg transition hover-lift hidden"
+    >
+      <i class="fas fa-copy ml-2"></i> کپی به کلیپ‌بورد
+    </button>
+  </div>
   <button
-    id="processLocalBtn"
-    class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-full font-bold text-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
-    disabled
+    id="previewLocalBtn"
+    class="w-full mt-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-full font-bold text-lg hover:shadow-lg transition hover-lift hidden"
   >
-    ادغام فایل‌ها
-  </button>
-  <button
-    id="copyLocalBtn"
-    class="w-full mt-3 bg-green-600 text-white py-3 rounded-full font-bold text-lg hover:bg-green-700 hidden transition"
-  >
-    📋 کپی به کلیپ‌بورد
+    <i class="fas fa-eye ml-2"></i> پیش‌نمایش خروجی
   </button>
 
   <!-- لیست فایل‌های یافت شده -->
@@ -292,4 +356,35 @@
     id="fileList"
     class="file-list mt-5 max-h-60 overflow-y-auto bg-gray-50 p-4 rounded-xl hidden"
   ></div>
+  
+  <!-- مودال پیش‌نمایش -->
+  <div
+    id="previewModal"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"
+  >
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden animate-fade-in">
+      <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <i class="fas fa-file-alt text-indigo-500"></i> پیش‌نمایش خروجی
+        </h3>
+        <button
+          id="closePreviewBtn"
+          class="text-gray-500 hover:text-gray-700 transition p-2 hover:bg-gray-100 rounded-full"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto max-h-[60vh] bg-gray-50">
+        <pre id="previewContent" class="text-sm text-gray-700 font-mono whitespace-pre-wrap break-all"></pre>
+      </div>
+      <div class="p-4 border-t border-gray-200 flex justify-end gap-2">
+        <button
+          id="downloadFromPreviewBtn"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+        >
+          <i class="fas fa-download ml-1"></i> دانلود
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

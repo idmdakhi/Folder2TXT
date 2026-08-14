@@ -387,11 +387,49 @@
       const fileInput = document.getElementById("fileInput");
       const processBtn = document.getElementById("processLocalBtn");
       const copyBtn = document.getElementById("copyLocalBtn");
+      const previewBtn = document.getElementById("previewLocalBtn");
       const commonOnlyCheckbox = document.getElementById("commonOnlyLocal");
       const ignorePatternsInput = document.getElementById(
         "ignorePatternsLocal",
       );
       const maxDepthInput = document.getElementById("maxDepthLocal");
+
+      // دکمه معکوس کردن انتخاب
+      const invertSelectionBtn = document.getElementById("invertSelectionBtn");
+      if (invertSelectionBtn) {
+        invertSelectionBtn.addEventListener("click", () =>
+          this.invertSelection(),
+        );
+      }
+
+      // دکمه‌های مودال پیش‌نمایش
+      const closePreviewBtn = document.getElementById("closePreviewBtn");
+      const previewModal = document.getElementById("previewModal");
+      const downloadFromPreviewBtn = document.getElementById(
+        "downloadFromPreviewBtn",
+      );
+
+      if (closePreviewBtn) {
+        closePreviewBtn.addEventListener("click", () => {
+          previewModal.classList.add("hidden");
+        });
+      }
+
+      if (previewModal) {
+        previewModal.addEventListener("click", (e) => {
+          if (e.target === previewModal) {
+            previewModal.classList.add("hidden");
+          }
+        });
+      }
+
+      if (downloadFromPreviewBtn) {
+        downloadFromPreviewBtn.addEventListener("click", () => {
+          const outputName =
+            document.getElementById("outputName").value || "merged_files.txt";
+          this.downloadFile(this.mergedContent, outputName);
+        });
+      }
 
       dropZone.addEventListener("dragover", (e) => {
         e.preventDefault();
@@ -412,6 +450,7 @@
 
       processBtn.addEventListener("click", () => this.processFiles());
       copyBtn.addEventListener("click", () => this.copyToClipboard());
+      previewBtn.addEventListener("click", () => this.showPreview());
 
       commonOnlyCheckbox.addEventListener("change", () =>
         this.renderFoundFileTypes(),
@@ -624,10 +663,10 @@
 
       foundTypes.sort().forEach((type) => {
         const item = document.createElement("div");
-        item.className = "file-type-item";
+        item.className = "file-type-item animate-fade-in";
         item.innerHTML = `
-          <input type="checkbox" id="type-${type}" value="${type}" checked>
-          <label for="type-${type}">.${type}</label>
+          <input type="checkbox" id="type-${type}" value="${type}" checked class="w-4 h-4 text-indigo-600 rounded transition">
+          <label for="type-${type}" class="cursor-pointer flex-1">.${type}</label>
           <span class="file-count">${typeCounts[type]}</span>
         `;
         const checkbox = item.querySelector("input");
@@ -636,12 +675,14 @@
           else this.selectedTypes.delete(type);
           this.updateProcessButton();
           this.showFileList();
+          this.updateStats();
         });
         this.selectedTypes.add(type);
         grid.appendChild(item);
       });
 
       this.showFileList();
+      this.updateStats();
     }
 
     showFileList() {
@@ -808,8 +849,113 @@
         });
       this.updateProcessButton();
       this.showFileList();
+      this.updateStats();
     }
-  }
+
+    invertSelection() {
+      document
+        .querySelectorAll('#fileTypeGrid input[type="checkbox"]')
+        .forEach((cb) => {
+          cb.checked = !cb.checked;
+          if (cb.checked) {
+            this.selectedTypes.add(cb.value);
+          } else {
+            this.selectedTypes.delete(cb.value);
+          }
+        });
+      this.updateProcessButton();
+      this.showFileList();
+      this.updateStats();
+    }
+
+    updateStats() {
+      const statsSection = document.getElementById("statsSection");
+      if (!statsSection || this.files.length === 0) {
+        if (statsSection) statsSection.classList.add("hidden");
+        return;
+      }
+
+      statsSection.classList.remove("hidden");
+
+      const totalFiles = this.files.length;
+      const filtered = this.applyFilters(this.files);
+      const selectedFiles = filtered.length;
+      const totalSize = filtered.reduce((sum, f) => sum + (f.size || 0), 0);
+      const fileTypes = this.selectedTypes.size;
+
+      // فرمت‌بندی حجم
+      let sizeText = "";
+      if (totalSize < 1024) {
+        sizeText = totalSize + " B";
+      } else if (totalSize < 1024 * 1024) {
+        sizeText = (totalSize / 1024).toFixed(1) + " KB";
+      } else {
+        sizeText = (totalSize / (1024 * 1024)).toFixed(2) + " MB";
+      }
+
+      // بروزرسانی کارت‌های آمار با انیمیشن
+      this.animateValue("statTotalFiles", totalFiles);
+      this.animateValue("statSelectedFiles", selectedFiles);
+      document.getElementById("statTotalSize").textContent = sizeText;
+      this.animateValue("statFileTypes", fileTypes);
+    }
+
+    animateValue(elementId, targetValue) {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+
+      const duration = 500;
+      const startValue = parseInt(element.textContent.replace(/,/g, "")) || 0;
+      const increment = (targetValue - startValue) / (duration / 16);
+      let currentValue = startValue;
+
+      const timer = setInterval(() => {
+        currentValue += increment;
+        if ((increment > 0 && currentValue >= targetValue) || 
+            (increment < 0 && currentValue <= targetValue)) {
+          currentValue = targetValue;
+          clearInterval(timer);
+        }
+        element.textContent = Math.round(currentValue).toLocaleString("fa-IR");
+      }, 16);
+    }
+
+    showPreview() {
+      const modal = document.getElementById("previewModal");
+      const previewContent = document.getElementById("previewContent");
+      
+      if (!modal || !previewContent) return;
+
+      previewContent.textContent = this.mergedContent;
+      modal.classList.remove("hidden");
+    }
+
+    showStatus(message, type) {
+      const status = document.getElementById("statusMessage");
+      const statusIcon = document.getElementById("statusIcon");
+      const statusText = document.getElementById("statusText");
+      
+      if (!status) return;
+
+      const icons = {
+        success: "fa-check-circle",
+        error: "fa-exclamation-circle",
+        processing: "fa-spinner fa-spin",
+        info: "fa-info-circle",
+      };
+
+      status.className = `status-message p-3 rounded-lg mb-4 flex items-center gap-2 ${type}`;
+      if (statusIcon) statusIcon.className = `fas ${icons[type] || "fa-info-circle"}`;
+      if (statusText) statusText.textContent = message;
+      
+      status.style.display = "flex";
+      if (type !== "processing") {
+        setTimeout(() => {
+          status.style.display = "none";
+        }, 5000);
+      }
+    }
+}
 
   new FolderTextMerger();
 })();
