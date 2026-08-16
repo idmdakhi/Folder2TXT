@@ -1,10 +1,10 @@
 {
-  "name": "folder2txt",
+  "name": "repo2dump",
   "version": "2.0.1",
   "description": "Convert folder structure and text files to a single text file – server & client processing",
   "main": "dist/server.js",
   "bin": {
-    "folder2txt": "./dist/cli.js"
+    "repo2dump": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
