@@ -21,6 +21,7 @@ export interface ProcessResult {
   content: string;
   fileCount: number;
   totalSize: number;
+  files: FileEntry[]; // اضافه‌شده برای پشتیبانی از قالب‌ها
 }
 
 // ==================== سیستم Ignore حرفه‌ای ====================
