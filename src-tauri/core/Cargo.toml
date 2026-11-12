@@ -1,0 +1,10 @@
+[package]
+name = "folder2txt-core"
+version = "2.0.1"
+description = "Folder2Txt processing core (بدون وابستگی به Tauri)"
+authors = ["Folder2Txt"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }

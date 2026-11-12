@@ -39,6 +39,92 @@ docker build -t folder2txt .
 docker run -p 3000:3000 -v $(pwd)/data:/app/data folder2txt
 ```
 
+### نسخه اجرایی ویندوز (exe)
+
+فایل آماده در مسیر `release/folder2txt-web.exe` قرار دارد و برای اجرا به Node.js نیاز ندارد.
+کافی است روی فایل دوبار کلیک کنید؛ سرور روی پورت ۳۰۰۰ بالا می‌آید و مرورگر به‌صورت خودکار باز می‌شود.
+
+> برای نسخه دسکتاپ بومی (بدون مرورگر و بدون Node) از `release/Folder2Txt.exe` استفاده کنید — بخش [نسخه دسکتاپ](#نسخه-دسکتاپ-tauri) را ببینید.
+
+- برای تغییر تنظیمات، یک فایل `.env` کنار فایل exe بسازید (بر اساس `.env.example`).
+- برای غیرفعال کردن باز شدن خودکار مرورگر: `OPEN_BROWSER=false`
+- لاگ‌ها در پوشه `logs` کنار فایل exe ساخته می‌شوند.
+- چون فایل exe امضای دیجیتال ندارد، ممکن است Windows SmartScreen هشدار دهد؛ گزینه «More info → Run anyway» را انتخاب کنید.
+
+ساخت مجدد فایل اجرایی:
+
+```bash
+npm install
+npm run build:exe
+```
+
+برای ساخت هم‌زمان نسخه‌های ویندوز، لینوکس و مک:
+
+```bash
+npm run build:exe:all
+```
+
+> خروجی‌ها در پوشه `release/` ساخته می‌شوند.
+
+## نسخه دسکتاپ (Tauri)
+
+علاوه بر نسخه وب، یک اپلیکیشن دسکتاپ بومی هم وجود دارد که همان رابط کاربری را در یک پنجره مستقل نمایش می‌دهد. هسته پردازش فایل‌ها در این نسخه با **Rust** نوشته شده و به Node.js یا مرورگر برای اجرا نیازی ندارد.
+
+- خروجی آماده: `release/Folder2Txt.exe`
+- حجم بسیار کمتر از نسخه Node و بدون پنجره کنسول
+- انتخاب پوشه با دیالوگ بومی ویندوز
+- ذخیره خروجی با دیالوگ «Save As»
+- پشتیبانی از `.gitignore`، فیلتر پسوندها، حداکثر عمق و حالت پاک‌سازی
+
+> در بیلد GNU (پیش‌فرض)، فایل `release/WebView2Loader.dll` باید کنار `Folder2Txt.exe` بماند. این فایل به‌صورت خودکار توسط `desktop:build` کنار exe کپی می‌شود. اگر با تارگت MSVC بیلد کنید، خروجی کاملاً تک‌فایل است.
+
+### پیش‌نیازهای بیلد
+
+1. Rust (نسخه ۱.۷۷ یا بالاتر)
+2. WebView2 Runtime (روی ویندوز ۱۰/۱۱ معمولاً نصب است)
+3. یکی از این دو:
+   - **MinGW** (پیشنهادی، بدون نیاز به ادمین): `scoop install mingw`
+   - **Visual Studio Build Tools** با workload «Desktop development with C++»
+
+اگر از مسیر MinGW استفاده می‌کنید، toolchain میزبان GNU را هم نصب کنید تا build-scriptها به لینکر MSVC نیاز نداشته باشند:
+
+```bash
+rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal
+```
+
+> نکته: اسکریپت `desktop:build` خودش این toolchain را در صورت نصب انتخاب می‌کند و مسیر `cargo` و `gcc` را پیدا می‌کند.
+
+### ساخت
+
+```bash
+npm install
+npm run desktop:build
+```
+
+اسکریپت `desktop:build` به‌صورت خودکار MinGW را پیدا می‌کند، آیکون‌ها را می‌سازد و خروجی را در `release/Folder2Txt.exe` قرار می‌دهد.
+
+اگر Visual Studio Build Tools دارید، می‌توانید از تارگت پیش‌فرض MSVC استفاده کنید:
+
+```bash
+npm run desktop:build:msvc
+```
+
+برای اجرای حالت توسعه:
+
+```bash
+npm run desktop:dev
+```
+
+برای اجرای تست‌های هسته Rust:
+
+```bash
+npm run desktop:test
+```
+
+> ساختار پروژه دسکتاپ در `src-tauri/` و رابط کاربری آن در `desktop-ui/` قرار دارد. منطق خالص پردازش فایل‌ها در crate جداگانه `src-tauri/core/` قرار گرفته تا مستقل از Tauri قابل تست باشد.
+
+> `desktop-ui/` یک کپی سفارشی‌شده از `client.html` و `assets/` است (با بخش «پردازش دسکتاپ» و پل Tauri). اگر رابط وب را تغییر دادید، همان تغییر را در `desktop-ui/` هم اعمال کنید.
+
 ## پیکربندی با متغیرهای محیطی
 
 | متغیر                | توضیح                                     | پیش‌فرض                           |

@@ -1,4 +1,6 @@
 import express from "express";
+// Import صریح ejs تا pkg بتواند موتور قالب را در فایل اجرایی قرار دهد
+import "ejs";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";

@@ -1,5 +1,8 @@
 node_modules*
 dist*
 logs*
+release*
+src-tauri/target*
+src-tauri/gen*
 .env
 package-lock.json

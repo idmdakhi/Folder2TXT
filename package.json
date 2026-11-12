@@ -3,18 +3,33 @@
   "version": "2.0.1",
   "description": "Convert folder structure and text files to a single text file – server & client processing",
   "main": "dist/server.js",
+  "bin": "dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc",
     "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
     "docker": "docker-compose up -d",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\"",
+    "build:exe": "npm run build && pkg . --targets node22-win-x64 --output release/folder2txt-web.exe",
+    "build:exe:all": "npm run build && pkg . --targets node22-win-x64,node22-linux-x64,node22-macos-x64 --out-path release",
+    "desktop:icons": "node scripts/make-icons.js",
+    "desktop:dev": "node scripts/dev-desktop.js",
+    "desktop:build": "node scripts/build-desktop.js",
+    "desktop:build:msvc": "tauri build --no-bundle && node scripts/copy-desktop-exe.js",
+    "desktop:test": "node scripts/test-desktop.js"
   },
   "author": "Your Name",
   "license": "GPL-3.0",
+  "pkg": {
+    "assets": [
+      "views/**/*",
+      "assets/**/*"
+    ]
+  },
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^16.0.3",
@@ -29,6 +44,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4",
     "@types/cors": "^2.8.19",
     "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.6",
@@ -38,6 +54,7 @@
     "@types/node": "^25.3.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "@yao-pkg/pkg": "^6.25.0",
     "eslint": "^8.57.0",
     "jest": "^29.7.0",
     "nodemon": "^3.1.14",

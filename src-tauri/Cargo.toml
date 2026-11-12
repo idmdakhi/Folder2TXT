@@ -1,0 +1,29 @@
+[package]
+name = "folder2txt-desktop"
+version = "2.0.1"
+description = "Folder2Txt desktop application"
+authors = ["Folder2Txt"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[workspace]
+members = ["core"]
+
+[lib]
+name = "folder2txt_desktop_lib"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+rfd = "0.15"
+folder2txt-core = { path = "core" }
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
